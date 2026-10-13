@@ -12,10 +12,11 @@ if platform=='mac':
     files += [root/f'widget/macos/dist/build-{version}/NetEhraz-macOS.zip',root/f'widget/macos/dist/build-{version}/SHA256SUMS.txt',root/f'widget/macos/dist/dmg-{version}/NerkhNama.dmg',root/f'widget/macos/dist/dmg-{version}/dmg-release.json',root/f'widget/macos/dist/dmg-{version}/installation-smoke.json']
 else:
     files += [root/'widget/windows/dist/NerkhNama.exe',root/'widget/windows/dist/SHA256SUMS.txt']
+files += list((temp/'widget-previews').rglob('*.png'))
 with zipfile.ZipFile(temp/'native-outputs.zip','w',zipfile.ZIP_STORED) as z:
     for p in files:
         if p.is_file() and not p.is_symlink():
-            z.write(p, 'diagnostics/build.log' if p==temp/'build-private.log' else p.relative_to(root).as_posix())
+            z.write(p, 'diagnostics/build.log' if p==temp/'build-private.log' else ('previews/'+p.relative_to(temp/'widget-previews').as_posix() if p.is_relative_to(temp/'widget-previews') else p.relative_to(root).as_posix()))
 PY
 password_file="$RUNNER_TEMP/native-password"
 umask 077
