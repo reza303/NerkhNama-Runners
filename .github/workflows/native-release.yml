@@ -1,0 +1,85 @@
+name: Native application build
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Reviewed private source commit
+        required: true
+      mac_version:
+        description: Application version
+        default: '1.11.0'
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: native-release
+  cancel-in-progress: false
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: mac
+          - os: macos-15-intel
+            platform: mac
+          - os: windows-2022
+            platform: windows
+          - os: windows-2025
+            platform: windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: runner
+          persist-credentials: false
+      - name: Validate input
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          APP_VERSION: ${{ inputs.mac_version }}
+        run: |
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.SOURCE_REPOSITORY }}
+          ref: ${{ inputs.source_sha }}
+          ssh-key: ${{ secrets.PRIVATE_SOURCE_KEY }}
+          path: app
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/widget/${{ matrix.platform == 'mac' && 'macos/tools' || 'windows' }}/go.mod
+          cache: false
+      - name: Build and test privately
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          APP_VERSION: ${{ inputs.mac_version }}
+          WIDGET_PREVIEW_OUTPUT: ${{ runner.temp }}/widget-previews
+        run: |
+          set +e
+          bash runner/build-private.sh > "$RUNNER_TEMP/build-private.log" 2>&1
+          result=$?
+          if [[ $result != 0 ]]; then
+            echo 'Native build or tests failed. Diagnostics are encrypted for the owner.'
+            exit "$result"
+          fi
+          echo 'Native build and tests passed.'
+      - name: Encrypt outputs
+        if: always()
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          APP_VERSION: ${{ inputs.mac_version }}
+        run: bash runner/encrypt-outputs.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Encrypted-native-${{ matrix.os }}
+          path: ${{ runner.temp }}/encrypted-outputs/*
+          if-no-files-found: error
+          retention-days: 7
