@@ -1,0 +1,16 @@
+name: Runner availability
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel, windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 3
+    steps:
+      - name: Check platform
+        shell: bash
+        run: echo 'Native runner started.'
