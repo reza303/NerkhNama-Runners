@@ -9,7 +9,7 @@ from pathlib import Path
 root=Path('app'); version=os.environ['APP_VERSION']; platform=os.environ['PLATFORM']; temp=Path(os.environ['RUNNER_TEMP'])
 files=[temp/'build-private.log']
 if platform=='mac':
-    files += [root/f'widget/macos/dist/build-{version}/NetEhraz-macOS.zip',root/f'widget/macos/dist/build-{version}/SHA256SUMS.txt',root/f'widget/macos/dist/dmg-{version}/NerkhNama.dmg',root/f'widget/macos/dist/dmg-{version}/dmg-release.json']
+    files += [root/f'widget/macos/dist/build-{version}/NetEhraz-macOS.zip',root/f'widget/macos/dist/build-{version}/SHA256SUMS.txt',root/f'widget/macos/dist/dmg-{version}/NerkhNama.dmg',root/f'widget/macos/dist/dmg-{version}/dmg-release.json',root/f'widget/macos/dist/dmg-{version}/installation-smoke.json']
 else:
     files += [root/'widget/windows/dist/NerkhNama.exe',root/'widget/windows/dist/SHA256SUMS.txt']
 with zipfile.ZipFile(temp/'native-outputs.zip','w',zipfile.ZIP_STORED) as z:
